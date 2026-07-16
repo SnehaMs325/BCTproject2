@@ -1,0 +1,1 @@
+web: gunicorn meetingAI.wsgi:application

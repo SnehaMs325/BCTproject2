@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Meeting Assistant</title>
+    
+    <!-- Fonts: Inter (UI) & Playfair Display (Elegant Heading) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #1e282d; /* Dark teal/grey background */
+            --card-light: #f5f7f9;
+            --text-main: #1a1a1a;
+            --text-muted: #6b7280;
+            --primary: #2d3748;
+            --transition-speed: 0.7s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* The Main Page Background with Blur overlay for Chat Mode */
+        .bg-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(30, 40, 45, 0);
+            backdrop-filter: blur(0px);
+            transition: all var(--transition-speed) ease;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body.chat-active .bg-overlay {
+            background: rgba(15, 20, 23, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Main Expanding Card */
+        .main-card {
+            background: linear-gradient(135deg, #ffffff 0%, #eef1f5 100%);
+            width: 90%;
+            max-width: 900px;
+            height: 60vh;
+            min-height: 450px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            z-index: 1;
+            transition: all var(--transition-speed) cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        body.chat-active .main-card {
+            max-width: 1100px;
+            height: 85vh;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 8px 24px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-links button {
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-links button:hover {
+            color: var(--text-main);
+        }
+
+        /* Download button logic - hidden initially, visible during chat */
+        #downloadBtn {
+            display: none;
+        }
+
+        body.chat-active #downloadBtn {
+            display: inline-block;
+        }
+
+        /* Sections Container to handle crossfading */
+        .content-wrapper {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Home / Hero Section */
+        .hero-section {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 20px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .hero-section.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-20px);
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: var(--text-main);
+            line-height: 1.1;
+            margin-bottom: 40px;
+        }
+
+        .hero-title em {
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        /* Combined Upload & Input Bar */
+        .input-bar {
+            background: white;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .input-bar:focus-within {
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+            border-color: #d1d5db;
+        }
+
+        .attach-btn {
+            background: #f3f4f6;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .attach-btn:hover { background: #e5e7eb; color: var(--text-main); }
+
+        .input-bar input[type="text"] {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 0 20px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: transparent;
+        }
+
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .start-btn:hover { background: #1a202c; }
+
+        .file-indicator {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            height: 20px;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+        }
+
+        .chat-section.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .user-bubble {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-bubble {
+            align-self: flex-start;
+            background: white;
+            color: var(--text-main);
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .chat-input-area {
+            padding: 20px 40px 30px;
+        }
+
+        /* FAQ Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 20px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-card h2 { font-family: 'Playfair Display', serif; margin-bottom: 20px; }
+        .modal-card p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.5; }
+        .close-btn { background: #f3f4f6; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; float: right; }
+
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Blurs the outside when chat is active -->
+    <div class="bg-overlay"></div>
+
+    <div class="main-card">
+        <!-- Extreme Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-links">
+                <button onclick="goHome()">Home</button>
+                <button onclick="toggleFAQ(true)">FAQ</button>
+                <!-- New Download Button -->
+                <button id="downloadBtn" onclick="downloadChat()">Download Chat <i class="fas fa-download"></i></button>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <!-- Initial Hero Screen -->
+            <div class="hero-section" id="heroSection">
+                <h1 class="hero-title">Analyze, extract,<br>and <em>comprehend</em></h1>
+                
+                <div class="input-bar">
+                    <!-- Hidden File Input -->
+                    <input type="file" id="fileUpload" accept=".txt,.pdf" style="display:none" onchange="showFileName()">
+                    
+                    <!-- Plus Button triggers File Input -->
+                    <button class="attach-btn" onclick="document.getElementById('fileUpload').click()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    
+                    <input type="text" id="initialQuery" placeholder="Upload a document and ask a question..." onkeypress="if(event.key === 'Enter') startWorkflow()">
+                    
+                    <button class="start-btn" onclick="startWorkflow()">Get Started</button>
+                </div>
+                <div class="file-indicator" id="fileIndicator"></div>
+            </div>
+
+            <!-- Chat Screen (Hidden Initially) -->
+            <div class="chat-section" id="chatSection">
+                <div class="chat-window" id="chatWindow">
+                    <!-- Chat bubbles injected here -->
+                </div>
+                
+                <div class="chat-input-area">
+                    <div class="input-bar" style="max-width: 100%;">
+                        <input type="text" id="followUpQuery" placeholder="Ask a follow up question..." onkeypress="if(event.key === 'Enter') askFollowUp()">
+                        <button class="start-btn" onclick="askFollowUp()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal Dialogue -->
+    <div class="modal-overlay" id="faqModal">
+        <div class="modal-card">
+            <h2>Frequently Asked Questions</h2>
+            <p><strong>What file types are supported?</strong><br>Currently, you can upload .pdf and .txt files containing your meeting transcripts.</p>
+            <p><strong>Is my data saved?</strong><br>For this session, your documents are kept securely in memory. If you leave the page, the data is cleared.</p>
+            <button class="close-btn" onclick="toggleFAQ(false)">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // UI Navigation Logic
+        function toggleFAQ(show) {
+            const modal = document.getElementById('faqModal');
+            if (show) modal.classList.add('active');
+            else modal.classList.remove('active');
+        }
+
+        function goHome() {
+            // Remove chat mode styles
+            document.body.classList.remove('chat-active');
+            document.getElementById('chatSection').classList.remove('active');
+            document.getElementById('heroSection').classList.remove('hidden');
+            
+            // Clear inputs and file selection
+            document.getElementById('fileUpload').value = '';
+            document.getElementById('fileIndicator').innerText = '';
+            document.getElementById('initialQuery').value = '';
+            document.getElementById('followUpQuery').value = '';
+            
+            // Wipe history on backend
+            fetch('/clear-history/', { method: 'POST', body: new URLSearchParams({ 'type': 'doc' }) });
+        }
+
+        function showFileName() {
+            const file = document.getElementById('fileUpload').files[0];
+            const indicator = document.getElementById('fileIndicator');
+            if (file) {
+                indicator.innerHTML = `<i class="fas fa-paperclip"></i> Attached: <strong>${file.name}</strong>`;
+                indicator.style.color = '#2d3748';
+            }
+        }
+
+        // Feature: Download Chat Logic
+        function downloadChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            const bubbles = chatWindow.querySelectorAll('.chat-bubble');
+            
+            if (bubbles.length === 0) {
+                alert("There is no chat to download yet!");
+                return;
+            }
+
+            let chatText = "--- AI Meeting Assistant Transcript ---\n\n";
+            
+            bubbles.forEach(bubble => {
+                if (bubble.classList.contains('user-bubble')) {
+                    chatText += "You: " + bubble.innerText + "\n\n";
+                } else if (bubble.classList.contains('ai-bubble')) {
+                    // Ignore the loading spinner text
+                    if (!bubble.innerText.includes("Uploading") && !bubble.innerText.includes("Reading")) {
+                        chatText += "AI: " + bubble.innerText + "\n\n";
+                    }
+                }
+            });
+
+            // Create a Blob file and trigger download
+            const blob = new Blob([chatText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.href = url;
+            downloadAnchor.download = 'Meeting_Chat_Transcript.txt';
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            URL.revokeObjectURL(url);
+        }
+
+        // Core Application Logic
+        function startWorkflow() {
+            const fileInput = document.getElementById('fileUpload');
+            const queryInput = document.getElementById('initialQuery');
+            const question = queryInput.value.trim();
+
+            if (!fileInput.files.length) {
+                alert("Please attach a .pdf or .txt file using the '+' button first.");
+                return;
+            }
+            if (!question) {
+                alert("Please type a question regarding your document.");
+                return;
+            }
+
+            // 1. Transition UI immediately to Chat Space
+            document.body.classList.add('chat-active');
+            document.getElementById('heroSection').classList.add('hidden');
+            document.getElementById('chatSection').classList.add('active');
+
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = ''; // clear previous
+
+            // Add User bubble
+            chatWindow.innerHTML += `<div class="chat-bubble user-bubble">${question}</div>`;
+            
+            // Add Loading bubble for upload + processing
+            const loadId = 'load-' + Date.now();
+            chatWindow.innerHTML += `<div class="chat-bubble ai-bubble" id="${loadId}">
+                <i class="fas fa-circle-notch spinner"></i> Uploading document & analyzing...
+            </div>`;
+
+            // 2. Upload Document
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            fetch('/upload/', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    document.getElementById(loadId).innerHTML = `<span style="color:red">Error: ${data.message}</span>`;
+                    return Promise.reject("Upload failed");
+                }
+                
+                document.getElementById(loadId).innerHTML = '<i class="fas fa-circle-notch spinner"></i> Reading transcript...';
+                
+                // 3. Ask the initial question
+                const askData = new FormData();
+                askData.append('question', question);
+                return fetch('/ask/', { method: 'POST', body: askData });
+            })
+            .then(res => res ? res.json() : null)
+            .then(data => {
+                if (data) {
+                    document.getElementById(loadId).innerText = data.status === 'success' ? data.answer : "Error: " + data.message;
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+            })
+            .catch(err => {
+                if(err !== "Upload failed") {
+                    document.getElementById(loadId).innerHTML = `<span style="color:red">Failed to process question.</span>`;
+                }
+            });
+        }
+
+        // Follow Up Questions in Chat Mode
+        function askFollowUp() {
+            const queryInput = document.getElementById('followUpQuery');
+            const chatWindow = document.getElementById('chatWindow');
+            const q = queryInput.value.trim();
+            if(!q) return;
+
+            chatWindow.innerHTML += `<div class="chat-bubble user-bubble">${q}</div>`;
+            queryInput.value = "";
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            
+            const loadId = 'load-' + Date.now();
+            chatWindow.innerHTML += `<div class="chat-bubble ai-bubble" id="${loadId}"><i class="fas fa-ellipsis-h"></i></div>`;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            
+            const formData = new FormData();
+            formData.append('question', q);
+            
+            fetch('/ask/', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById(loadId).innerText = data.status === 'success' ? data.answer : "Error: " + data.message;
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            });
+        }
+    </script>
+</body>
+</html>
