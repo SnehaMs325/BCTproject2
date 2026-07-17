@@ -318,6 +318,61 @@
 
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+    /* 1. Make the main card take up more screen on phones */
+    .main-card {
+        width: 95%;
+    }
+    
+    body.chat-active .main-card {
+        width: 95%;
+        height: 92vh; 
+    }
+
+    /* 2. Shrink the massive hero title */
+    .hero-title {
+        font-size: 2.2rem;
+    }
+
+    /* 3. Reduce the heavy padding inside the chat area */
+    .chat-window {
+        padding: 15px 15px;
+        gap: 15px;
+    }
+
+    .chat-input-area {
+        padding: 10px 15px 20px;
+    }
+
+    /* 4. Let chat bubbles stretch wider on small screens */
+    .chat-bubble {
+        max-width: 90%;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+
+    /* 5. Compact the top navigation */
+    .top-nav {
+        padding: 15px;
+    }
+
+    .nav-links {
+        gap: 10px;
+        padding: 6px 15px;
+    }
+
+    /* 6. Compact the input bar and button */
+    .input-bar {
+        padding: 6px 8px;
+    }
+    
+    .start-btn {
+        padding: 10px 18px;
+        font-size: 0.9rem;
+    }
+}
     </style>
 </head>
 <body>
