@@ -1,4 +1,4 @@
-# 🤖 AI Meeting Assistant
+# 🤖 AI Meeting Transcript Reader
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 [![Django](https://img.shields.io/badge/Django-Latest-092E20.svg?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com)
